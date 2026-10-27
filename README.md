@@ -12,6 +12,18 @@ Source code for the Behringer IGNITE 64-channel multi-track sequencer.
   <img src="docs/images/ignite-front.jpg" alt="Behringer IGNITE" width="720">
 </p>
 
+## Key features
+
+- 64-channel multi-track sequencer with a song, scene, track and pattern structure
+- Patterns of up to 16 bars with 16 steps per bar, scenes of up to 200 bars, 96 PPQN timing
+- Real-time recording, undo, fill, solo/skip, gang and sculpt functions
+- Transpose control and up to 10 user-defined scales
+- Internal General MIDI sound engine
+- 5 MIDI DIN in/out pairs, USB MIDI, and USB host MIDI for up to 5 devices
+- MIDI clock sync, MIDI Machine Control and remote control
+- 8 CV and 8 Gate jacks with calibration, plus sync in/out
+- Wi-Fi connectivity
+
 ## Release status
 
 This repository contains the IGNITE application, its audio engine and hardware protocol, and the
