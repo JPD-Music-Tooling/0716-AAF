@@ -11,9 +11,9 @@ Source code for the Behringer IGNITE 64-channel multi-track sequencer.
 ## Release status
 
 This repository contains the IGNITE application, its audio engine and hardware protocol, and the
-Buildroot tree for the Linux image. Material that could not be redistributed was removed (see
-[Removed from this release](#removed-from-this-release)), so some parts need your own replacements
-before they build. There is no official firmware release here yet.
+Buildroot tree for the Linux image. Material that could not be redistributed was removed, so some
+parts need your own replacements before they build (see the README in each folder). There is no
+official firmware release here yet.
 
 ## Front panel
 
@@ -58,22 +58,6 @@ Third-party components retain their original licenses and notices. Each folder's
 bundled third-party code and its license. The LICENSE does not relicense third-party code, images or
 trademarks.
 
-## Removed from this release
-
-Material that could not be redistributed was removed. The code and build scripts may still refer to it
-by path:
-
-- The MCU firmware (`Ignite_MCU.hex`). The MCU firmware is not part of this release.
-- The prebuilt bootloader binary for the Music Tribe SOM. Buildroot builds U-Boot from source.
-- Prebuilt tools without source: `pcmode` (the device-side USB transfer service started by
-  `create-usb-gadgets.sh`) and the `EncryptImage` packaging tool, which was replaced by the equivalent
-  `openssl` command.
-- The NXP/Marvell SD8987 Wi-Fi firmware (`sd8987_uapsta.bin`). Get it from
-  [linux-firmware](https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git)
-  (`nxp/sd8987_uapsta.bin`) under NXP's license.
-- The application's General MIDI SoundFont (`Source/Application/sf/Ignite.sf2`).
-- The embedded AWE32 SoundFont and demo samples in `AudIO` (see [AudIO/README.md](AudIO/README.md)).
-
 ## Contribute and get help
 
 You do not need organization membership or a company account to participate. Use your own GitHub
@@ -92,7 +76,7 @@ See [SECURITY.md](SECURITY.md) for scope and response expectations.
 
 ## Maintainers
 
-Reviews are routed to **@Luigi-MT** and the organization's **Owners** team. Default-branch protection,
+Reviews are routed to the organization's **Owners** team. Default-branch protection,
 code-owner review and the organization's sign-off workflow apply here.
 
 <details>
