@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/images/render-front.png" alt="IGNITE (BE 0716-AAF)" width="100%">
-</p>
-
 # Behringer IGNITE (BE 0716-AAF)
 
 > There is a Creator in every human being. Our mission is to empower those who have not and cannot.
@@ -95,22 +91,11 @@ See [SECURITY.md](SECURITY.md) for scope and response expectations.
 Reviews are routed to the organization's **Owners** team. Default-branch protection,
 code-owner review and the organization's sign-off workflow apply here.
 
-<details>
-<summary>Product renders (early design)</summary>
-
-These renders show an earlier design and do not match the shipping hardware in every detail.
-
-<p align="center">
-  <img src="docs/images/render-rear.png" alt="IGNITE early design render, rear view" width="100%">
-  <img src="docs/images/render-side.png" alt="IGNITE early design render, side view" width="100%">
-</p>
-</details>
-
 ## Names and logos
 
-Behringer and Klark Teknik are brands of MUSIC Tribe. The Behringer and Klark Teknik names and logos,
-and the IGNITE name and logo, are not granted under the software license. The product photos and
-renders in `docs/images/` are not covered by the software license either. See the organization's
+Behringer is a brand of MUSIC Tribe. The Behringer and IGNITE names and logos are not granted under
+the software license. The product photos in `docs/images/` are not covered by the software license
+either. See the organization's
 [trademark policy](https://github.com/MusicTribeOpenSource/.github/blob/main/TRADEMARKS.md).
 
 Copyright (c) MUSIC Tribe.
