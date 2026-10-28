@@ -2,8 +2,8 @@
 
 ## Current scope
 
-The IGNITE source and firmware releases have not been uploaded. No firmware version is represented
-here as supported or security-audited. A supported-version policy must accompany the first release.
+The IGNITE source code is published here, but no firmware release has been made yet. No firmware
+version is represented here as supported or security-audited. A supported-version policy must accompany the first release.
 
 ## Report privately
 
