@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/social-preview.png" alt="Behringer IGNITE (BE 0716-AAF)" width="100%">
+</p>
+
 # Behringer IGNITE (BE 0716-AAF)
 
 > There is a Creator in every human being. Our mission is to empower those who have not and cannot.
