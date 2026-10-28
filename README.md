@@ -59,47 +59,29 @@ official firmware release here yet.
 
 | Folder | Contents | License |
 |---|---|---|
-| [`Source/Application/`](Source/Application) | IGNITE application (UI, model and hardware integration, built on JUCE) | AGPL-3.0-or-later |
+| [`Source/Application/`](Source/Application) | Application (built on JUCE) | AGPL-3.0-or-later |
 | [`AudIO/`](AudIO) | Audio engine library | AGPL-3.0-or-later |
 | [`ComProtocol/`](ComProtocol) | Hardware communication protocol | AGPL-3.0-or-later |
-| [`Linux/`](Linux) | Buildroot Linux image for the i.MX8M Mini SOM | GPL-2.0 (Buildroot) |
+| [`Linux/`](Linux) | Buildroot Linux image | GPL-2.0 (Buildroot) |
 
-## Licensing
+The root [`LICENSE`](LICENSE) is the AGPL-3.0 text that covers the Music Tribe code (Application, AudIO,
+ComProtocol). Third-party components keep their original licenses. See the README in each folder.
 
-Original software in this repository is licensed under **AGPL-3.0-or-later**; see [LICENSE](LICENSE).
-The Buildroot tree in `Linux/` is GPL-2.0 (see `Linux/buildroot/COPYING`), and the packages it builds keep
-their own licenses.
+## Community
 
-Third-party components retain their original licenses and notices. Each folder's README lists the
-bundled third-party code and its license. The LICENSE does not relicense third-party code, images or
-trademarks.
+- **Chat with us:** [Discord](https://discord.gg/gS6qtuShvw)
+- **Contribute:** fork the repository and open a pull request. No membership needed. Sign off commits
+  with `git commit -s`. See the
+  [contributing guide](https://github.com/MusicTribeOpenSource/.github/blob/main/CONTRIBUTING.md) and
+  [code of conduct](https://github.com/MusicTribeOpenSource/.github/blob/main/CODE_OF_CONDUCT.md).
+- **Report a security problem** privately: [Report a vulnerability](https://github.com/MusicTribeOpenSource/0716-AAF/security/advisories/new).
+  Do not post vulnerabilities or credentials in public issues. See [SECURITY.md](SECURITY.md).
 
-## Contribute and get help
+---
 
-You do not need organization membership or a company account to participate. Use your own GitHub
-account to open an issue or send a pull request. Sign off commits with `git commit -s`.
-
-- [Contribution guide](https://github.com/MusicTribeOpenSource/.github/blob/main/CONTRIBUTING.md)
-- [Code of conduct](https://github.com/MusicTribeOpenSource/.github/blob/main/CODE_OF_CONDUCT.md)
-- [Community governance](https://github.com/MusicTribeOpenSource/.github/blob/main/GOVERNANCE.md)
-- [Discord community](https://discord.gg/gS6qtuShvw)
-
-## Security
-
-Do not disclose vulnerabilities, personal information or credentials in public issues.
-Use [private vulnerability reporting](https://github.com/MusicTribeOpenSource/0716-AAF/security/advisories/new).
-See [SECURITY.md](SECURITY.md) for scope and response expectations.
-
-## Maintainers
-
-Reviews are routed to the organization's **Owners** team. Default-branch protection,
-code-owner review and the organization's sign-off workflow apply here.
-
-## Names and logos
-
-Behringer is a brand of MUSIC Tribe. The Behringer and IGNITE names and logos are not granted under
-the software license. The product photos in `docs/images/` are not covered by the software license
-either. See the organization's
+Behringer is a brand of MUSIC Tribe. The Behringer name and logo, and the IGNITE name and logo, are
+trademarks and are not covered by the software licenses in this repository. Neither are the product
+images in `docs/images/`. See the
 [trademark policy](https://github.com/MusicTribeOpenSource/.github/blob/main/TRADEMARKS.md).
 
 Copyright (c) MUSIC Tribe.
