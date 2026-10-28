@@ -1,6 +1,6 @@
 # IGNITE Linux (Buildroot)
 
-Buildroot tree for the BE 0716-AAF Linux image (Variscite i.MX8M Mini SOM).
+Buildroot tree for the BE 0716-AAF Linux image.
 
 ## Building
 
@@ -24,7 +24,7 @@ license terms, which Buildroot will ask you to accept. The NXP/Marvell SD8987 Wi
 [linux-firmware](https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git)
 (`nxp/sd8987_uapsta.bin`) under NXP's license and add it to `rootfs_overlay/usr/lib/firmware/mrvl/`.
 
-The prebuilt bootloader for the Music Tribe SOM and the `pcmode` USB transfer service (started by
+The prebuilt bootloader and the `pcmode` USB transfer service (started by
 `create-usb-gadgets.sh`) were removed because they cannot be redistributed. Buildroot builds U-Boot
 from source.
 
