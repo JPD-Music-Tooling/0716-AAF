@@ -24,6 +24,7 @@
 #ifdef _WIN64
 //#define FP_TEST_KEYBRD              // uncomment Enable/Disable Key Test code
 //#define FP_REMOTE_CLIENT_RECIVE_WIN // Recive from script or device based on IP
+#define FP_UART_WIN_PANEL // Desktop front-panel emulator: a named pipe (\\.\pipe\IgnitePanel) created by ignite-panel; inert if the pipe isn't there
 #elif __APPLE__
 //
 #else //linux --- Remote Controll/Debug
@@ -377,12 +378,12 @@ namespace Ignite
  293  , 292  , 290  , 289  , 288  , 287  , 286  , 285  , 283  , 282  , 281  , 280  , 279  , 278  , 276  , 276  , 275  , 274  , 273  , 271  ,
  270  , 269  , 268  , 268  , 267  , 266  , 264  , 263  , 262  , 262  , 261  , 260  , 258  , 257  , 257  , 256  , 255  , 254  , 253  , 252  ,
  251  , 251  , 250  , 249  , 248  , 247  , 246  , 245 };
-#if defined FP_UART_LINUX
-		int ttyMcuFileHandler;
+#if defined FP_UART_LINUX || defined FP_UART_WIN_PANEL
+		int ttyMcuFileHandler = -1;
 		int ttyUSBHostPortHandler;
 		std::chrono::steady_clock::time_point lastKeyPress;
 		std::atomic<bool> isScheduled;
 		int debounceDurationMs = 1000;
-#endif //FP_UART_LINUX
+#endif //FP_UART_LINUX || FP_UART_WIN_PANEL
 	};
 }

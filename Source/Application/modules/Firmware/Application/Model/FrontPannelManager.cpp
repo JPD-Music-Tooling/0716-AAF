@@ -38,6 +38,14 @@ struct sockaddr_in server_addr;
 #include <linux/input.h>
 #endif //FP_UART_LINUX
 
+#if defined FP_UART_WIN_PANEL
+// Desktop front-panel emulator (ignite-panel, behringer-desktop-emulators): the panel creates
+// \\.\pipe\IgnitePanel; we connect to it as a client and wrap the HANDLE as a CRT fd so the rest of
+// this file's generic read()/write() calls (shared with FP_UART_LINUX) work unchanged.
+#include <windows.h>
+#include <io.h>
+static const wchar_t* fpDesktopPipeName() { return L"\\\\.\\pipe\\IgnitePanel"; }
+#endif //FP_UART_WIN_PANEL
 
 #if defined FP_UART_LINUX
 #define BAUDRATE B115200
@@ -689,6 +697,23 @@ Module("FrontPannelManager", (moduleId_t)ModuleName::moduleFrontPannel, (unsigne
 	}
 #endif // FP_WIN_ETHERNET_CLIENT
 
+#if defined FP_UART_WIN_PANEL
+	{
+		// Non-blocking connect attempt: the emulator panel may not be running (normal headless/real-
+		// hardware startup), in which case this stays inert, same as FP_UART_LINUX's "setup failed" path.
+		HANDLE h = CreateFileW(fpDesktopPipeName(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+		if (h == INVALID_HANDLE_VALUE)
+		{
+			DBG("FP: ignite-panel pipe not found (not running?) ---!");
+		}
+		else
+		{
+			ttyMcuFileHandler = _open_osfhandle(reinterpret_cast<intptr_t>(h), 0);
+			DBG("FP: connected to ignite-panel");
+		}
+	}
+#endif //FP_UART_WIN_PANEL
+
 #if defined FP_UART_LINUX
 	{
 		int c, res;
@@ -891,7 +916,12 @@ void FrontPannelManager::run()
 			continue;
 		}
 		if (DataToProcess < 4)
+		{
+#if defined FP_UART_WIN_PANEL
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));  // desktop: wait instead of spinning
+#endif
 			continue;
+		}
 
 		SysMessage _sysMessage;
 		_sysMessage.Direction = DIRECTION_IN;
@@ -1228,6 +1258,11 @@ void FrontPannelManager::FrontPannelExternalReadThreadFunction(void)
 		bool isDataFromEth = false;
 #if defined FP_UART_LINUX
 		dwBytesRead = read(ttyMcuFileHandler, szBuff, bufferSize);
+#elif defined FP_UART_WIN_PANEL
+		if (ttyMcuFileHandler < 0)
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));  // no panel connected: wait instead of spinning
+		else
+			dwBytesRead = _read(ttyMcuFileHandler, szBuff, bufferSize);
 #endif
 #if defined FP_REMOTE_CLIENT_RECIVE || defined FP_REMOTE_CLIENT_RECIVE_WIN
 		if (dwBytesRead <= 0)
@@ -1356,7 +1391,11 @@ void FrontPannelManager::FrontPannelExternalReadThreadFunction(void)
 }
 inline int FrontPannelManager::uart_write_with_retry(int ttyMcuFileHandler, const void* data, size_t size)
 {
-#if defined FP_UART_LINUX
+#if defined FP_UART_WIN_PANEL
+	if (ttyMcuFileHandler < 0) return -1;  // no panel connected: silently drop, same as the macOS pty case
+	if (_write(ttyMcuFileHandler, data, static_cast<unsigned int>(size)) == static_cast<int>(size)) return 0;
+	return -1;
+#elif defined FP_UART_LINUX
 	int retries = 0;
 	ssize_t bytes_written;
 
@@ -1379,8 +1418,10 @@ inline int FrontPannelManager::uart_write_with_retry(int ttyMcuFileHandler, cons
 	}
 
 	// If we reach here, all retries have failed
-#endif
 	return -1;
+#else
+	return -1;
+#endif
 }
 void FrontPannelManager::FrontPannelExternalWriteThreadFunction(void)
 {
@@ -1406,7 +1447,7 @@ void FrontPannelManager::FrontPannelExternalWriteThreadFunction(void)
 			case SYS_LED_MSG:
 			case SYS_KNOB_MSG:
 			case SYS_SYTM_MSG:
-#if defined FP_UART_LINUX
+#if defined FP_UART_LINUX || defined FP_UART_WIN_PANEL
 				uart_write_with_retry(ttyMcuFileHandler, &fpQData.Header, 1);
 				uart_write_with_retry(ttyMcuFileHandler, &fpQData.Direction, 1);
 				uart_write_with_retry(ttyMcuFileHandler, &fpQData.Id, 1);
@@ -1429,7 +1470,7 @@ void FrontPannelManager::FrontPannelExternalWriteThreadFunction(void)
 					break;
 
 			case SYS_SYNC_MSG:
-#if defined FP_UART_LINUX
+#if defined FP_UART_LINUX || defined FP_UART_WIN_PANEL
 				uart_write_with_retry(ttyMcuFileHandler, &fpQData.Header, 1);
 				uart_write_with_retry(ttyMcuFileHandler, &fpQData.Direction, 1);
 				uart_write_with_retry(ttyMcuFileHandler, &fpQData.Id, 1);
@@ -1561,7 +1602,7 @@ void FrontPannelManager::sendMidiMessageExternal(MidiMessage msg, uint8_t midipo
 {
 	midiSendDone = false;
 	std::lock_guard<std::mutex> lock(midiSendMutx);//lock the FrontPanneExternalWriteQ - not to send any data to MCU
-#if defined FP_UART_LINUX
+#if defined FP_UART_LINUX || defined FP_UART_WIN_PANEL
 	uint8_t header = SYS_MIDI_MSG;
 	uint8_t direction = DIRECTION_OUT;
 	uint8_t id = midiport;
