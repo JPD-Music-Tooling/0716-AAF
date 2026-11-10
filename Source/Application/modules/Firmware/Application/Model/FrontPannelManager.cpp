@@ -40,11 +40,41 @@ struct sockaddr_in server_addr;
 
 #if defined FP_UART_WIN_PANEL
 // Desktop front-panel emulator (ignite-panel, behringer-desktop-emulators): the panel creates
-// \\.\pipe\IgnitePanel; we connect to it as a client and wrap the HANDLE as a CRT fd so the rest of
-// this file's generic read()/write() calls (shared with FP_UART_LINUX) work unchanged.
+// \\.\pipe\IgnitePanel; we connect to it as a client.
+//
+// FrontPannelExternalReadThreadFunction (read) and FrontPannelExternalWriteThreadFunction/
+// uart_write_with_retry (write) run on separate threads and both touch this same pipe handle.
+// Synchronous ReadFile/WriteFile from two different threads on one handle can hang indefinitely
+// while the other direction is pending (confirmed directly with a minimal repro: a concurrent
+// reader thread + writer thread on one pipe handle hung exactly like FrontPannelManager did;
+// switching both sides to overlapped I/O with a per-call OVERLAPPED/event fixed it). So the
+// connect uses FILE_FLAG_OVERLAPPED and every read/write goes through these two helpers instead of
+// the CRT's read()/write() (which can't do overlapped I/O).
 #include <windows.h>
 #include <io.h>
 static const wchar_t* fpDesktopPipeName() { return L"\\\\.\\pipe\\IgnitePanel"; }
+static int fpOverlappedWrite(int fd, const void* data, size_t size) {
+	HANDLE h = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+	OVERLAPPED ov{};
+	ov.hEvent = ::CreateEventW(nullptr, TRUE, FALSE, nullptr);
+	DWORD written = 0;
+	BOOL ok = ::WriteFile(h, data, static_cast<DWORD>(size), nullptr, &ov);
+	if (!ok && ::GetLastError() == ERROR_IO_PENDING) ok = ::GetOverlappedResult(h, &ov, &written, TRUE);
+	else if (ok) written = static_cast<DWORD>(size);
+	::CloseHandle(ov.hEvent);
+	return (ok && written == size) ? static_cast<int>(written) : -1;
+}
+static int fpOverlappedRead(int fd, void* buf, size_t size) {
+	HANDLE h = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+	OVERLAPPED ov{};
+	ov.hEvent = ::CreateEventW(nullptr, TRUE, FALSE, nullptr);
+	DWORD read = 0;
+	BOOL ok = ::ReadFile(h, buf, static_cast<DWORD>(size), nullptr, &ov);
+	if (!ok && ::GetLastError() == ERROR_IO_PENDING) ok = ::GetOverlappedResult(h, &ov, &read, TRUE);
+	else if (ok) read = static_cast<DWORD>(size);
+	::CloseHandle(ov.hEvent);
+	return ok ? static_cast<int>(read) : -1;
+}
 #endif //FP_UART_WIN_PANEL
 
 #if defined FP_UART_LINUX
@@ -701,15 +731,15 @@ Module("FrontPannelManager", (moduleId_t)ModuleName::moduleFrontPannel, (unsigne
 	{
 		// Non-blocking connect attempt: the emulator panel may not be running (normal headless/real-
 		// hardware startup), in which case this stays inert, same as FP_UART_LINUX's "setup failed" path.
-		HANDLE h = CreateFileW(fpDesktopPipeName(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+		HANDLE h = CreateFileW(fpDesktopPipeName(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
 		if (h == INVALID_HANDLE_VALUE)
 		{
-			DBG("FP: ignite-panel pipe not found (not running?) ---!");
+			std::cout << "FP: ignite-panel pipe not found (not running?)" << std::endl;
 		}
 		else
 		{
 			ttyMcuFileHandler = _open_osfhandle(reinterpret_cast<intptr_t>(h), 0);
-			DBG("FP: connected to ignite-panel");
+			std::cout << "FP: connected to ignite-panel" << std::endl;
 		}
 	}
 #endif //FP_UART_WIN_PANEL
@@ -1262,7 +1292,7 @@ void FrontPannelManager::FrontPannelExternalReadThreadFunction(void)
 		if (ttyMcuFileHandler < 0)
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));  // no panel connected: wait instead of spinning
 		else
-			dwBytesRead = _read(ttyMcuFileHandler, szBuff, bufferSize);
+			dwBytesRead = fpOverlappedRead(ttyMcuFileHandler, szBuff, bufferSize);
 #endif
 #if defined FP_REMOTE_CLIENT_RECIVE || defined FP_REMOTE_CLIENT_RECIVE_WIN
 		if (dwBytesRead <= 0)
@@ -1393,8 +1423,7 @@ inline int FrontPannelManager::uart_write_with_retry(int ttyMcuFileHandler, cons
 {
 #if defined FP_UART_WIN_PANEL
 	if (ttyMcuFileHandler < 0) return -1;  // no panel connected: silently drop, same as the macOS pty case
-	if (_write(ttyMcuFileHandler, data, static_cast<unsigned int>(size)) == static_cast<int>(size)) return 0;
-	return -1;
+	return fpOverlappedWrite(ttyMcuFileHandler, data, size) >= 0 ? 0 : -1;
 #elif defined FP_UART_LINUX
 	int retries = 0;
 	ssize_t bytes_written;
