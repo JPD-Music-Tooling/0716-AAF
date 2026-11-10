@@ -53,14 +53,19 @@ struct sockaddr_in server_addr;
 #include <windows.h>
 #include <io.h>
 static const wchar_t* fpDesktopPipeName() { return L"\\\\.\\pipe\\IgnitePanel"; }
+// lpNumberOfBytesRead/-Written is unreliable on an overlapped handle even when the call completes
+// synchronously (TRUE immediately) -- the actually-transferred count must always come from
+// GetOverlappedResult. Assuming it equals the requested size (an earlier version of this code did)
+// causes a short completion to report phantom bytes from whatever was left in the caller's buffer --
+// this was the actual cause of the "ERROR: unknown ID received from MCU" flood once the hang itself
+// was fixed: short reads on this byte-mode pipe are the norm, not the exception.
 static int fpOverlappedWrite(int fd, const void* data, size_t size) {
 	HANDLE h = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
 	OVERLAPPED ov{};
 	ov.hEvent = ::CreateEventW(nullptr, TRUE, FALSE, nullptr);
 	DWORD written = 0;
 	BOOL ok = ::WriteFile(h, data, static_cast<DWORD>(size), nullptr, &ov);
-	if (!ok && ::GetLastError() == ERROR_IO_PENDING) ok = ::GetOverlappedResult(h, &ov, &written, TRUE);
-	else if (ok) written = static_cast<DWORD>(size);
+	if (ok || ::GetLastError() == ERROR_IO_PENDING) ok = ::GetOverlappedResult(h, &ov, &written, TRUE);
 	::CloseHandle(ov.hEvent);
 	return (ok && written == size) ? static_cast<int>(written) : -1;
 }
@@ -70,8 +75,7 @@ static int fpOverlappedRead(int fd, void* buf, size_t size) {
 	ov.hEvent = ::CreateEventW(nullptr, TRUE, FALSE, nullptr);
 	DWORD read = 0;
 	BOOL ok = ::ReadFile(h, buf, static_cast<DWORD>(size), nullptr, &ov);
-	if (!ok && ::GetLastError() == ERROR_IO_PENDING) ok = ::GetOverlappedResult(h, &ov, &read, TRUE);
-	else if (ok) read = static_cast<DWORD>(size);
+	if (ok || ::GetLastError() == ERROR_IO_PENDING) ok = ::GetOverlappedResult(h, &ov, &read, TRUE);
 	::CloseHandle(ov.hEvent);
 	return ok ? static_cast<int>(read) : -1;
 }
@@ -924,10 +928,15 @@ void FrontPannelManager::run()
 	uint32_t count = 0;
 	while (!threadShouldExit())
 	{
+		// McuRxWrite always points at the next FREE slot (the producer writes at the current
+		// McuRxWrite, then advances it), so the count of valid unread bytes between read and write
+		// is write-read (wrapped: (MAX-read)+write) with no +1 -- the +1 this used to have overcounts
+		// by one byte, so the consumer eventually reads one stale byte past the real data, shifting
+		// every frame boundary after it out of alignment (the periodic "unknown ID"/resync storms).
 		uint32_t DataToProcess = (McuRxWrite.load() == McuRxRead.load()) ? 0 :
 			(McuRxWrite.load() > McuRxRead.load()) ?
-			(McuRxWrite.load() - McuRxRead.load() + 1) :
-			((MCU_RX_BUFF_MAX_SIZE - McuRxRead.load()) + McuRxWrite.load() + 1);
+			(McuRxWrite.load() - McuRxRead.load()) :
+			((MCU_RX_BUFF_MAX_SIZE - McuRxRead.load()) + McuRxWrite.load());
 
 		if ((McuRxWrite.load() + 1) % MCU_RX_BUFF_MAX_SIZE == McuRxRead.load()) // Buffer is full
 		{
